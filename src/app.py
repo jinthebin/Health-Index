@@ -6,7 +6,7 @@ import os
 import folium
 from streamlit_folium import st_folium
 import geopandas
-from data_read import health_ind, hlth_ind_eng, glossary, hlth_ind_eng_gdf, hlth_ind_eng_LTLA_gdf
+from data_read import health_ind, hlth_ind_eng, glossary, hlth_ind_eng_gdf, hlth_ind_eng_LTLA_gdf, nihr_data
 
 st.set_page_config(layout="wide", page_title="Health Index - UK")
 
@@ -139,6 +139,18 @@ with tab2:
                 )
             }
             )
+    
+    #experimental maps for England regions: 
+    st.header("England LTLA - EXPERIMENTAL", divider=True)
+    fig, ax = plt.subplots()
+
+    hlth_ind_eng_LTLA_gdf.plot(
+    column="2021",
+    legend=True,
+    ax=ax
+    )
+
+    st.pyplot(fig)
 
 with tab3:
 
@@ -183,6 +195,14 @@ with tab5:
     col2.metric(label="KPI 3", value=12, delta=-7)
 
     col3.metric(label="KPI 4", value=1302)
+    #presenting NIHR Awards dataset to showcade UK-wide NIHR supported research in Healthcare
+    st.write(
+    """You can view NIHR Awards dataset here - which provides a list of NIHR supported research across the UK.!"""
+            )
+    st.dataframe(
+            nihr_data,
+            use_container_width=True
+            )
 
 
 

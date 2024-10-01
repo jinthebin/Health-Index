@@ -1,6 +1,7 @@
 import pandas as pd
 import geopandas
 import os
+import requests
 
 #changing directory to parent directory
 os.chdir("..")
@@ -68,6 +69,29 @@ hlth_ind_eng_LTLA_gdf = geopandas.GeoDataFrame(
     crs = 'EPSG:4326' # the coordinate reference system of the data - use EPSG:4326 if you are unsure
     )
 
+
+#Reading NIHR Awards Data from OpenSoft API: 
+# define function to make API call:
+def fetch_json_from_api(url):
+    try:
+        # Send a GET request to the API endpoint
+        response = requests.get(url)
+        
+        # Check if the request was successful
+        if response.status_code == 200:
+            # Parse the JSON response
+            json_data = response.json()
+            return json_data
+        else:
+            print(f"Error: Unable to fetch data, Status code: {response.status_code}")
+            return None
+    except requests.RequestException as e:
+        print(f"Exception occurred: {e}")
+        return None
+
+api_url = "https://nihr.opendatasoft.com/api/explore/v2.1/catalog/datasets/nihr-infrastructure-supported-projects/exports/json" 
+nihr = fetch_json_from_api(api_url)
+nihr_data = pd.json_normalize(nihr)
 
 #changing directory back to src folder
 os.chdir("src")
