@@ -6,6 +6,7 @@ import os
 import folium
 from streamlit_folium import st_folium
 import geopandas
+import contextily as cx
 from data_read import health_ind, hlth_ind_eng, glossary, hlth_ind_eng_gdf, hlth_ind_eng_LTLA_gdf, nihr_data
 
 st.set_page_config(layout="wide", page_title="Health Index - UK")
@@ -20,12 +21,13 @@ with st.expander("Click here for additional information"):
                    help="Links to ONS website where the data is sourced from.")
     # st.image("https://cdn.ons.gov.uk/assets/images/ons-logo/v2/ons-logo.svg")
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs(
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
     ["Overall Health Index Scores",
      "Indices by region",
      "UK wide data by year",
      "Glossary",
-     "KPIs"]
+     "NIHR Data & experimental KPIs",
+     "Interactable map - EXPERIMENTAL"]
      )
 
 with tab1:
@@ -141,7 +143,8 @@ with tab2:
             )
     
     #experimental maps for England regions: 
-    st.header("England LTLA - EXPERIMENTAL", divider=True)
+    st.header("England Health Index by LTLA (2021) - EXPERIMENTAL", divider=True)
+
     fig, ax = plt.subplots()
 
     hlth_ind_eng_LTLA_gdf.plot(
@@ -149,7 +152,12 @@ with tab2:
     legend=True,
     ax=ax
     )
-
+    # #Adding base map:
+    # cx.add_basemap(
+    # ax, # the figure we created using our plot method
+    # crs=hlth_ind_eng_LTLA_gdf.crs.to_string(), # we can pull the CRS out of the geodataframe!
+    # zoom=8 # zoom level
+    # )
     st.pyplot(fig)
 
 with tab3:
@@ -197,12 +205,40 @@ with tab5:
     col3.metric(label="KPI 4", value=1302)
     #presenting NIHR Awards dataset to showcade UK-wide NIHR supported research in Healthcare
     st.write(
-    """You can view NIHR Awards dataset here - which provides a list of NIHR supported research across the UK.!"""
+    """You can view NIHR Awards dataset here - which provides a list of NIHR supported research across the UK"""
             )
     st.dataframe(
             nihr_data,
             use_container_width=True
             )
+    
+with tab6:
+    # Filter out instances with no geometry
+    hlth_LDLA_gdf = hlth_ind_eng_LTLA_gdf[~hlth_ind_eng_LTLA_gdf['geometry'].is_empty]
+
+    # Create a geometry list from the GeoDataFrame
+    geo_df_list = [[point.xy[1][0], point.xy[0][0]] for point in hlth_LDLA_gdf.geometry]
+
+    gp_map_tooltip = folium.Map(
+        location=[50.7, -4.2],
+        zoom_start=8,
+        tiles='openstreetmap',
+        )
+
+    for i, coordinates in enumerate(geo_df_list):
+
+        gp_map_tooltip = gp_map_tooltip.add_child(
+            folium.Marker(
+                location=coordinates,
+                tooltip=hlth_LDLA_gdf['Area Name'].values[i],
+                icon=folium.Icon(icon="user-md", prefix='fa', color="black")
+                )
+        )
+    st_folium(gp_map_tooltip)
+    #code for displaying returned data, once selection fields/filters added:
+    # returned_map_data = st_folium(gp_map_tooltip)
+
+    # st.write(returned_map_data)
 
 
 

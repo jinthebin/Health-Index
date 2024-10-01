@@ -19,3 +19,4 @@ ipykernel==6.29.5
 ipython==8.27.0
 nbformat>=4.2.0
 fiona==1.9.0
+contextily==1.6.2
