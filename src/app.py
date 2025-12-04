@@ -3,33 +3,16 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
 import os
-from data_read import health_ind, df4, glossary, exc4
+import folium
+from streamlit_folium import st_folium
+import geopandas
+import contextily as cx
+from data_read import health_ind, hlth_ind_eng, glossary, hlth_ind_eng_gdf, hlth_ind_eng_LTLA_gdf, nihr_data
 
 st.set_page_config(layout="wide", page_title="Health Index - UK")
 
 st.title("Health across the UK")
 
-
-# #changing directory to parent directory
-# os.chdir("..")
-# print(os.getcwd())
-# #Loading all data
-# health_ind = pd.read_excel("dat/healthindex.xlsx", sheet_name='data')
-# #removing unwanted columns
-# health_ind.drop(columns=["Numerator","Denominator"], axis=1, inplace=True)
-
-# gloassry = pd.read_excel("dat/healthindex.xlsx", 
-#                              sheet_name='Table_1_Indicator_details', 
-#                              header=2,
-#                              usecols="A:J"
-#                              )
-# #Health index england import:
-# exc4 = "dat/healthindexscoresengland.xlsx" #defining path
-# df4 = pd.read_excel(exc4, sheet_name="Table_2_Index_scores", header=2 )
-# df4 = (df4.rename(columns={"Area Type [Note 3]": "Area Type"})) #tranforming dataframe - renaming columns
-
-# #changing directory back to src folder
-# os.chdir("src")
 
 with st.expander("Click here for additional information"):
     st.write("Some really useful information")
@@ -38,31 +21,85 @@ with st.expander("Click here for additional information"):
                    help="Links to ONS website where the data is sourced from.")
     # st.image("https://cdn.ons.gov.uk/assets/images/ons-logo/v2/ons-logo.svg")
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs(
-    ["UK wide data by year",
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
+    ["Overall Health Index Scores",
      "Indices by region",
+     "UK wide data by year",
      "Glossary",
-     "Overall Health Index Scores",
-     "KPIs"]
+     "NIHR Data & experimental KPIs",
+     "Interactable map - EXPERIMENTAL"]
      )
 
 with tab1:
+    #need to use selenium to crawl on ONS website:
+    #https://stackoverflow.com/questions/16627227/how-do-i-avoid-http-error-403-when-web-scraping-with-python#:~:text=This%20is%20probably%20because%20of%20mod_security
+    #https://www.freecodecamp.org/news/better-web-scraping-in-python-with-selenium-beautiful-soup-and-pandas-d6390592e251
+    #exc4 = "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/healthandsocialcare/healthandwellbeing/datasets/healthindexscoresengland/current/healthindexscoresengland.xlsx"
+    # exc4 = "dat/healthindexscoresengland.xlsx"
+    # df4 = pd.read_excel(exc4, sheet_name="Table_2_Index_scores", header=2 )
 
-    st.divider()
+    # df4 = (df4.rename(columns={"Area Type [Note 3]": "Area Type"})) #tranforming dataframe - renaming columns
 
-    year_select = st.selectbox("Please select the year",
-                             health_ind["Year"].unique()
-                             )
-    st.plotly_chart(
-        px.bar(
-            health_ind,
-            x = "Area name",
-            y = "Value",
-            color= "Indicator name",
-            title=f"Health across UK for {year_select}", 
+    areatyp_select = st.selectbox("Please select an Area Type",
+                                hlth_ind_eng["Area Type"].unique()
+                                )
+    hlth_ind_eng = hlth_ind_eng[hlth_ind_eng["Area Type"]==areatyp_select]
 
-        )
+    area_select = st.multiselect("Please select areas",
+                                hlth_ind_eng["Area Name"].unique()
+                                )
+    # if area_select is None:
+    #     area_select = df4["Area Name"].unique()
+    # else:
+
+
+    hlth_ind_eng = hlth_ind_eng[hlth_ind_eng["Area Name"].isin(area_select)]
+    #reverse-pivot the dataframe 
+
+    df = (hlth_ind_eng.melt(id_vars=['Area Code','Area Name','Area Type'], var_name='Year', value_name='Health Index')
+            .sort_values(['Area Name','Year'])
+            .reset_index(drop=True))
+
+    col_1, col_2 = st.columns([0.3, 0.7])
+    with col_1:
+
+        st.dataframe(
+                df,
+                use_container_width=True
+                )
+    with col_2:
+        st.plotly_chart(
+                px.line(df, 
+                            x="Year", 
+                            y="Health Index", 
+                            color="Area Name",
+                            markers=True,
+                            symbol="Area Name",
+                            title=f'Overall Health Index for area type {areatyp_select}, over time')
+            )
+    st.header("Top areas by overall Health index for given year:", divider=True)
+    year_sel = st.selectbox("Please select year",
+                                df["Year"].unique()
+                                )
+    df_top_yr = df[df["Year"]==year_sel]
+    st.dataframe(
+        # df['Health Index'].nlargest(n=10)
+        df_top_yr.nlargest(n=10, columns=['Health Index'], keep='all')
+        
     )
+    #experimental maps for England regions: 
+    st.header("England Regions - EXPERIMENTAL", divider=True)
+    fig, ax = plt.subplots()
+
+    hlth_ind_eng_gdf.plot(
+    column="2021",
+    legend=True,
+    ax=ax
+    )
+
+    st.pyplot(fig)
+
+
 
 with tab2:
 
@@ -104,7 +141,44 @@ with tab2:
                 )
             }
             )
+    
+    #experimental maps for England regions: 
+    st.header("England Health Index by LTLA (2021) - EXPERIMENTAL", divider=True)
+
+    fig, ax = plt.subplots()
+
+    hlth_ind_eng_LTLA_gdf.plot(
+    column="2021",
+    legend=True,
+    ax=ax
+    )
+    # #Adding base map:
+    # cx.add_basemap(
+    # ax, # the figure we created using our plot method
+    # crs=hlth_ind_eng_LTLA_gdf.crs.to_string(), # we can pull the CRS out of the geodataframe!
+    # zoom=8 # zoom level
+    # )
+    st.pyplot(fig)
+
 with tab3:
+
+    st.divider()
+
+    year_select = st.selectbox("Please select the year",
+                             health_ind["Year"].unique()
+                             )
+    st.plotly_chart(
+        px.bar(
+            health_ind,
+            x = "Area name",
+            y = "Value",
+            color= "Indicator name",
+            title=f"Health across UK for {year_select}", 
+
+        )
+    )
+    
+with tab4:
     # gloassry = pd.read_excel("dat/healthindex.xlsx", 
     #                          sheet_name='Table_1_Indicator_details', 
     #                          header=2,
@@ -116,64 +190,6 @@ with tab3:
             glossary,
             use_container_width=True
             )
-
-with tab4:
-    #need to use selenium to crawl on ONS website:
-    #https://stackoverflow.com/questions/16627227/how-do-i-avoid-http-error-403-when-web-scraping-with-python#:~:text=This%20is%20probably%20because%20of%20mod_security
-    #https://www.freecodecamp.org/news/better-web-scraping-in-python-with-selenium-beautiful-soup-and-pandas-d6390592e251
-    #exc4 = "https://www.ons.gov.uk/file?uri=/peoplepopulationandcommunity/healthandsocialcare/healthandwellbeing/datasets/healthindexscoresengland/current/healthindexscoresengland.xlsx"
-    # exc4 = "dat/healthindexscoresengland.xlsx"
-    # df4 = pd.read_excel(exc4, sheet_name="Table_2_Index_scores", header=2 )
-
-    # df4 = (df4.rename(columns={"Area Type [Note 3]": "Area Type"})) #tranforming dataframe - renaming columns
-
-    areatyp_select = st.selectbox("Please select an Area Type",
-                                df4["Area Type"].unique()
-                                )
-    df4 = df4[df4["Area Type"]==areatyp_select]
-
-    area_select = st.multiselect("Please select areas",
-                                df4["Area Name"].unique()
-                                )
-    # if area_select is None:
-    #     area_select = df4["Area Name"].unique()
-    # else:
-
-
-    df4 = df4[df4["Area Name"].isin(area_select)]
-    #reverse-pivot the dataframe 
-
-    df = (df4.melt(id_vars=['Area Code','Area Name','Area Type'], var_name='Year', value_name='Health Index')
-            .sort_values(['Area Name','Year'])
-            .reset_index(drop=True))
-
-    col_1, col_2 = st.columns([0.3, 0.7])
-    with col_1:
-
-        st.dataframe(
-                df,
-                use_container_width=True
-                )
-    with col_2:
-        st.plotly_chart(
-                px.line(df, 
-                            x="Year", 
-                            y="Health Index", 
-                            color="Area Name",
-                            markers=True,
-                            symbol="Area Name",
-                            title=f'Overall Health Index for area type {areatyp_select}, over time')
-            )
-    st.header("Top areas by overall Health index for given year:", divider=True)
-    year_sel = st.selectbox("Please select year",
-                                df["Year"].unique()
-                                )
-    df_top_yr = df[df["Year"]==year_sel]
-    st.dataframe(
-        # df['Health Index'].nlargest(n=10)
-        df_top_yr.nlargest(n=10, columns=['Health Index'], keep='all')
-        
-    )
 
 
 with tab5:
@@ -187,6 +203,42 @@ with tab5:
     col2.metric(label="KPI 3", value=12, delta=-7)
 
     col3.metric(label="KPI 4", value=1302)
+    #presenting NIHR Awards dataset to showcade UK-wide NIHR supported research in Healthcare
+    st.write(
+    """You can view NIHR Awards dataset here - which provides a list of NIHR supported research across the UK"""
+            )
+    st.dataframe(
+            nihr_data,
+            use_container_width=True
+            )
+    
+with tab6:
+    # Filter out instances with no geometry
+    hlth_LDLA_gdf = hlth_ind_eng_LTLA_gdf[~hlth_ind_eng_LTLA_gdf['geometry'].is_empty]
+
+    # Create a geometry list from the GeoDataFrame
+    geo_df_list = [[point.xy[1][0], point.xy[0][0]] for point in hlth_LDLA_gdf.geometry]
+
+    gp_map_tooltip = folium.Map(
+        location=[50.7, -4.2],
+        zoom_start=8,
+        tiles='openstreetmap',
+        )
+
+    for i, coordinates in enumerate(geo_df_list):
+
+        gp_map_tooltip = gp_map_tooltip.add_child(
+            folium.Marker(
+                location=coordinates,
+                tooltip=hlth_LDLA_gdf['Area Name'].values[i],
+                icon=folium.Icon(icon="user-md", prefix='fa', color="black")
+                )
+        )
+    st_folium(gp_map_tooltip)
+    #code for displaying returned data, once selection fields/filters added:
+    # returned_map_data = st_folium(gp_map_tooltip)
+
+    # st.write(returned_map_data)
 
 
 
