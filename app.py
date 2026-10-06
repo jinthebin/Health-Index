@@ -7,7 +7,7 @@ import folium
 from streamlit_folium import st_folium
 import geopandas
 import contextily as cx
-from data_read import health_ind, hlth_ind_eng, glossary, hlth_ind_eng_gdf, hlth_ind_eng_LTLA_gdf, nihr_data
+from src.data_read import health_ind, hlth_ind_eng, glossary, hlth_ind_eng_gdf, hlth_ind_eng_LTLA_gdf, nihr_data
 
 st.set_page_config(layout="wide", page_title="Health Index - UK")
 

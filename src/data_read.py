@@ -4,28 +4,28 @@ import os
 import requests
 import contextlib
 
-tst_data = pd.read_excel('/tstdat/healthindex.xlsx', sheet_name='data') #test data load
+# tst_data = pd.read_excel('/tstdat/healthindex.xlsx', sheet_name='data') #test data load
 
 
-with contextlib.chdir(".."): #using block-local directory switching 
+with contextlib.chdir("dat/"): #using block-local directory switching 
     #Loading all data:
-    health_ind = pd.read_excel('dat/healthindex.xlsx', sheet_name='data')
+    health_ind = pd.read_excel('healthindex.xlsx', sheet_name='data')
 
     #Health index england import:
-    hlth_ind_eng_pth = "dat/healthindexscoresengland.xlsx" #defining path
+    hlth_ind_eng_pth = "healthindexscoresengland.xlsx" #defining path
     hlth_ind_eng = pd.read_excel(hlth_ind_eng_pth, sheet_name="Table_2_Index_scores", header=2 )
     
     #Health index england import:
-    exc4 = "dat/healthindexscoresengland.xlsx" #defining path
+    exc4 = "healthindexscoresengland.xlsx" #defining path
     df4 = pd.read_excel(exc4, sheet_name="Table_2_Index_scores", header=2 )
 
-    region_dat = pd.read_csv("dat/Regions_December_2020_EN_BFC_2022.csv", usecols=['RGN20CD','RGN20NM','BNG_E','BNG_N','LONG','LAT'])
+    region_dat = pd.read_csv("Regions_December_2020_EN_BFC_2022.csv", usecols=['RGN20CD','RGN20NM','BNG_E','BNG_N','LONG','LAT'])
 
     #Reading LTLA point data:
-    LTLA_dat = pd.read_csv("dat/GLTLA_DEC_2022_EW_BFC.csv", usecols=['GLTLA22CD','BNG_E','BNG_N','LONG','LAT'])
+    LTLA_dat = pd.read_csv("GLTLA_DEC_2022_EW_BFC.csv", usecols=['GLTLA22CD','BNG_E','BNG_N','LONG','LAT'])
 
     #Glossary import:
-    glossary = pd.read_excel("dat/healthindex.xlsx", 
+    glossary = pd.read_excel("healthindex.xlsx", 
                              sheet_name='Table_1_Indicator_details', 
                              header=2,
                              usecols="A:J"
