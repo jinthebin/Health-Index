@@ -7,7 +7,7 @@ import folium
 from streamlit_folium import st_folium
 import geopandas
 import contextily as cx
-from src.data_read import health_ind, hlth_ind_eng, glossary, hlth_ind_eng_gdf, hlth_ind_eng_LTLA_gdf, nihr_data
+from src.data_read import health_ind, hlth_ind_eng, glossary, hlth_ind_eng_gdf, hlth_ind_eng_LTLA_gdf #, nihr_data
 
 st.set_page_config(layout="wide", page_title="Health Index - UK")
 
@@ -89,13 +89,19 @@ with tab1:
     )
     #experimental maps for England regions: 
     st.header("England Regions - EXPERIMENTAL", divider=True)
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(
+        figsize=(10, 6)
+    )
 
     hlth_ind_eng_gdf.plot(
     column="2021",
     legend=True,
     ax=ax
     )
+    #added below two lines for equal aspect ratio to avoid distortion of map:
+
+    ax.set_aspect("equal")
+    plt.tight_layout()
 
     st.pyplot(fig)
 
