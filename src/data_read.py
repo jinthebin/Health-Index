@@ -3,6 +3,29 @@ import geopandas
 import os
 import requests
 
+
+'''
+with contextlib.chdir(".."): #using block-local directory switching 
+    #Loading all data:
+    health_ind = pd.read_excel("dat/healthindex.xlsx", sheet_name='data')
+
+    #Health index england import:
+    exc4 = "dat/healthindexscoresengland.xlsx" #defining path
+    df4 = pd.read_excel(exc4, sheet_name="Table_2_Index_scores", header=2 )
+
+    #Glossary import:
+    glossary = pd.read_excel("dat/healthindex.xlsx", 
+                             sheet_name='Table_1_Indicator_details', 
+                             header=2,
+                             usecols="A:J"
+                             )
+#transforming data:
+
+#removing unwanted columns
+health_ind.drop(columns=["Numerator","Denominator"], axis=1, inplace=True)
+#renaming columns
+df4 = (df4.rename(columns={"Area Type [Note 3]": "Area Type"}))
+'''
 #changing directory to parent directory
 os.chdir("..")
 print(os.getcwd())
