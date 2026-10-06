@@ -2,16 +2,25 @@ import pandas as pd
 import geopandas
 import os
 import requests
+import contextlib
 
 
-'''
 with contextlib.chdir(".."): #using block-local directory switching 
     #Loading all data:
     health_ind = pd.read_excel("dat/healthindex.xlsx", sheet_name='data')
 
     #Health index england import:
+    hlth_ind_eng_pth = "dat/healthindexscoresengland.xlsx" #defining path
+    hlth_ind_eng = pd.read_excel(hlth_ind_eng_pth, sheet_name="Table_2_Index_scores", header=2 )
+    
+    #Health index england import:
     exc4 = "dat/healthindexscoresengland.xlsx" #defining path
     df4 = pd.read_excel(exc4, sheet_name="Table_2_Index_scores", header=2 )
+
+    region_dat = pd.read_csv("dat/Regions_December_2020_EN_BFC_2022.csv", usecols=['RGN20CD','RGN20NM','BNG_E','BNG_N','LONG','LAT'])
+
+    #Reading LTLA point data:
+    LTLA_dat = pd.read_csv("dat/GLTLA_DEC_2022_EW_BFC.csv", usecols=['GLTLA22CD','BNG_E','BNG_N','LONG','LAT'])
 
     #Glossary import:
     glossary = pd.read_excel("dat/healthindex.xlsx", 
@@ -19,34 +28,36 @@ with contextlib.chdir(".."): #using block-local directory switching
                              header=2,
                              usecols="A:J"
                              )
-#transforming data:
 
-#removing unwanted columns
-health_ind.drop(columns=["Numerator","Denominator"], axis=1, inplace=True)
+'''
+
+Transforming data below:
+
+'''
+
+
 #renaming columns
 df4 = (df4.rename(columns={"Area Type [Note 3]": "Area Type"}))
-'''
-#changing directory to parent directory
-os.chdir("..")
-print(os.getcwd())
-#Loading all data
-health_ind = pd.read_excel("dat/healthindex.xlsx", sheet_name='data')
-#removing unwanted columns
-health_ind.drop(columns=["Numerator","Denominator"], axis=1, inplace=True)
 
-glossary = pd.read_excel("dat/healthindex.xlsx", 
-                             sheet_name='Table_1_Indicator_details', 
-                             header=2,
-                             usecols="A:J"
-                             )
-#Health index england import:
-hlth_ind_eng_pth = "dat/healthindexscoresengland.xlsx" #defining path
-hlth_ind_eng = pd.read_excel(hlth_ind_eng_pth, sheet_name="Table_2_Index_scores", header=2 )
+#changing directory to parent directory
+# os.chdir("..")
+# print(os.getcwd())
+# #Loading all data
+# health_ind = pd.read_excel("dat/healthindex.xlsx", sheet_name='data')
+#removing unwanted columns
+health_ind.drop(columns=["Numerator","Denominator"], 
+                # axis=1, 
+                inplace=True)
+
+
+
 hlth_ind_eng = (hlth_ind_eng.rename(columns={"Area Type [Note 3]": "Area Type"})) #tranforming dataframe - renaming columns
 
-region_dat = pd.read_csv("dat/Regions_December_2020_EN_BFC_2022.csv", usecols=['RGN20CD','RGN20NM','BNG_E','BNG_N','LONG','LAT'])
+
 region_dat = (region_dat.rename(columns={"RGN20CD": "Area Code"})) #renaming columns
-region_dat.drop(columns=["RGN20NM"], axis=1, inplace=True) #dropping name region
+region_dat.drop(columns=["RGN20NM"], 
+                # axis=1, 
+                inplace=True) #dropping name region
 
 #merging with health_index_england data:
 hlth_ind_eng_mrg = pd.merge(
@@ -69,9 +80,8 @@ hlth_ind_eng_gdf = geopandas.GeoDataFrame(
     )
 
 
-#Reading LTLA point data:
-LTLA_dat = pd.read_csv("dat/GLTLA_DEC_2022_EW_BFC.csv", usecols=['GLTLA22CD','BNG_E','BNG_N','LONG','LAT'])
-LTLA_dat = (region_dat.rename(columns={"GLTLA22CD": "Area Code"})) #renaming columns
+
+LTLA_dat = (LTLA_dat.rename(columns={"GLTLA22CD": "Area Code"})) #renaming columns
 
 #merging with health_index_england data:
 hlth_ind_eng_LTLA_mrg = pd.merge(
@@ -117,4 +127,4 @@ nihr = fetch_json_from_api(api_url)
 nihr_data = pd.json_normalize(nihr)
 
 #changing directory back to src folder
-os.chdir("src")
+# os.chdir("src")
