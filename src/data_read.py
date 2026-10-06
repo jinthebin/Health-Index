@@ -4,6 +4,8 @@ import os
 import requests
 import contextlib
 
+tst_data = pd.read_excel('tstdat/healthindex.xlsx', sheet_name='data') #test data load
+
 
 with contextlib.chdir(".."): #using block-local directory switching 
     #Loading all data:
